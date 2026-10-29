@@ -238,8 +238,8 @@ html{-webkit-text-size-adjust:100%;scroll-padding-top:72px}
 @media(min-width:981px){.cm-bar{display:none}}
 
 /* v10 시공사례(포트폴리오) 전용 — .pg-portfolio 범위 */
-.pg-portfolio .pagehead{padding:128px 0 18px}.pg-portfolio .pagehead h1{font-size:clamp(30px,4.4vw,48px);margin:6px 0 8px}.pg-portfolio .pagehead .lead{font-size:16px;margin:0;color:var(--tx2)}
-.pg-portfolio .sec.tight{padding-top:12px}
+.pg-portfolio:not(.pg-case) .pagehead{padding:128px 0 18px}.pg-portfolio:not(.pg-case) .pagehead h1{font-size:clamp(30px,4.4vw,48px);margin:6px 0 8px}.pg-portfolio:not(.pg-case) .pagehead .lead{font-size:16px;margin:0;color:var(--tx2)}
+.pg-portfolio:not(.pg-case) .sec.tight{padding-top:12px}
 .pg-portfolio .pf-bar{display:flex;gap:14px 20px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
 .pg-portfolio .pf-chips{min-width:0;flex:1 1 auto}
 .pg-portfolio .filters{margin:0;gap:8px}
@@ -271,7 +271,7 @@ html{-webkit-text-size-adjust:100%;scroll-padding-top:72px}
 @media(min-width:981px){.pg-portfolio .pf-bar{position:sticky;top:76px;z-index:20;padding:10px 0;background:var(--bg);margin-bottom:6px}}
 @media(max-width:1023px){.pg-portfolio .pf-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}}
 @media(max-width:639px){
- .pg-portfolio .pagehead{padding:104px 0 10px}.pg-portfolio .pagehead .lead{display:none}
+ .pg-portfolio:not(.pg-case) .pagehead{padding:104px 0 10px}.pg-portfolio:not(.pg-case) .pagehead .lead{display:none}
  .pg-portfolio .pf-grid{grid-template-columns:1fr;gap:24px}
  .pg-portfolio .pf-bar{display:block}
  .pg-portfolio .pf-chips{position:relative;margin-inline:-16px}
@@ -282,3 +282,37 @@ html{-webkit-text-size-adjust:100%;scroll-padding-top:72px}
  .pg-portfolio .pk h3{font-size:24px}
 }
 @media(prefers-reduced-motion:reduce){.pg-portfolio .pk,.pg-portfolio .pk img,.pg-portfolio .pk .go i{transition:none}.pg-portfolio .pk:hover img,.pg-portfolio .pk:hover .go i{transform:none}}
+
+/* v11 모션 (transform·opacity 중심, JS가 없어도 내용은 항상 보임) */
+@keyframes mo-up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.mo-e{animation:mo-up .5s var(--ease) calc(var(--mo-i,0)*70ms) backwards}
+.mo-on .mo:not(.in){opacity:0}
+.mo-on .mo.in{animation:mo-up .5s var(--ease) var(--mo-d,0s) backwards}
+.mo-on .mo.in.q{animation-duration:.22s;animation-delay:0s}
+.pg-portfolio .tx .tl>span{transition-duration:.55s}
+.no-mo .mo-e,.no-mo .mo.in{animation:none}.no-mo .mo:not(.in){opacity:1}
+@media print{.mo,.mo-e{opacity:1!important;animation:none!important}}
+/* 읽기 진행 표시줄: 고정 헤더 안쪽 아래 가장자리에 붙어 겹치지 않음 */
+.rp{position:absolute;left:0;right:0;bottom:-1px;height:3px;pointer-events:none}
+.rp i{display:block;height:100%;background:var(--gold);transform:scaleX(0);transform-origin:0 50%;transition:transform .12s linear}
+/* 상세 페이지: 관련 사례·상담 버튼 hover/focus 통일 */
+.pg-case .wk,.pg-case .band .btn{transition:transform .25s var(--ease),border-color .25s,filter .25s}
+.pg-case .wk:hover{transform:translateY(-3px)}
+.pg-case :is(.wk,.btn,.gi,.tag):focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+/* 브랜드 모션그래픽: 차량 윤곽선 → 보호필름 막 → 한 번 지나가는 광택 (장식, 사진과 분리) */
+.pf-art{position:absolute;right:max(16px,calc((100vw - 1200px)/2));top:104px;width:min(44vw,440px);pointer-events:none;opacity:.9}
+.pf-art svg{display:block;width:100%;height:auto;overflow:visible}
+.pf-line *{fill:none;stroke:var(--tx2);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:pf-draw 1.4s var(--ease) .2s forwards}
+.pf-line path:nth-child(2){animation-delay:.5s}.pf-line circle{animation-delay:.7s}
+.pf-film path{fill:none;stroke:var(--gold);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;transform:translateY(-8px);animation:pf-draw 1.6s var(--ease) .6s forwards}
+.pf-sweep{animation:pf-sweep 1.5s var(--ease) 1.6s 1 both}
+@keyframes pf-draw{to{stroke-dashoffset:0}}
+@keyframes pf-sweep{from{transform:translateX(0)}to{transform:translateX(700px)}}
+@media(max-width:760px){.pf-art{display:none}}
+@media(prefers-reduced-motion:reduce){
+ .mo-e,.mo-on .mo.in{animation:none!important}.mo-on .mo:not(.in){opacity:1}
+ .pf-line *,.pf-film path{animation:none!important;stroke-dashoffset:0}.pf-sweep{display:none}
+ .rp i{transition:none}.pg-case .wk:hover{transform:none}
+}
+
+.cm-act{display:flex;gap:10px}.cm-act .btn{flex:1}.cm-prev{margin-top:18px;padding:18px;border:1px dashed var(--bd,#ffffff40);border-radius:10px;max-width:none}

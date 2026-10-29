@@ -64,19 +64,19 @@ export async function onRequest({ request: req, env, params }) {
   }
   if (path === 'posts' && m === 'POST') {
     if (!user) return err('로그인이 필요합니다', 401);
-    const board = String(body.board || ''), title = clean(body.title, 80), text = clean(body.body, 5000);
+    const board = String(body.board || ''), title = clean(body.title, 80), text = clean(body.body, 5000), motion = user.role === 'admin' && body.motion === 0 ? 0 : 1;
     if (!(board in BOARDS)) return err('게시판을 선택해 주세요');
     if (BOARDS[board] && user.role !== 'admin') return err('관리자만 작성할 수 있습니다', 403);
     if (!title || !text) return err('제목과 내용을 입력해 주세요');
     if (user.role !== 'admin' && (await db.prepare('SELECT COUNT(*) n FROM posts WHERE user_id=? AND created>?').bind(user.id, Date.now() - 6e5).first()).n >= 5) return err('잠시 후 다시 작성해 주세요', 429);
-    const r = await db.prepare('INSERT INTO posts(board,user_id,title,body,created) VALUES(?,?,?,?,?)').bind(board, user.id, title, text, Date.now()).run();
+    const r = await db.prepare('INSERT INTO posts(board,user_id,title,body,created,motion) VALUES(?,?,?,?,?,?)').bind(board, user.id, title, text, Date.now(), motion).run();
     return json({ id: r.meta.last_row_id });
   }
   let mm;
   if ((mm = path.match(/^posts\/(\d+)$/))) {
     const id = +mm[1];
     if (m === 'GET') {
-      const p = await db.prepare('SELECT p.id,p.board,p.title,p.body,p.created,p.views,p.user_id,u.nick FROM posts p JOIN users u ON u.id=p.user_id WHERE p.id=?').bind(id).first();
+      const p = await db.prepare('SELECT p.id,p.board,p.title,p.body,p.created,p.views,p.motion,p.user_id,u.nick FROM posts p JOIN users u ON u.id=p.user_id WHERE p.id=?').bind(id).first();
       if (!p) return err('글을 찾을 수 없습니다', 404);
       await db.prepare('UPDATE posts SET views=views+1 WHERE id=?').bind(id).run();
       const c = await db.prepare('SELECT c.id,c.body,c.created,c.user_id,u.nick FROM comments c JOIN users u ON u.id=c.user_id WHERE c.post_id=? ORDER BY c.id').bind(id).all();

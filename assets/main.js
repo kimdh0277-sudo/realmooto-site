@@ -29,6 +29,7 @@
       var name = cat === 'all' ? '전체' : $('[data-f="' + cat + '"]').firstChild.textContent;
       cnt.textContent = (q ? '“' + qi.value.trim() + '” ' : '') + name + ' ' + shown + '건';
       emp.hidden = shown > 0;
+      if (push) { cards.forEach(function (c) { c.classList.add('in', 'q') }) }
       if (push) { var u = new URLSearchParams(); if (cat !== 'all') u.set('cat', cat); if (qi.value.trim()) u.set('q', qi.value.trim()); try { history.replaceState(null, '', location.pathname + (u.toString() ? '?' + u : '')) } catch (e) { } }
     }
     chips.forEach(function (b) { b.addEventListener('click', function () { cat = b.dataset.f; apply(true) }) });
@@ -82,3 +83,29 @@
   document.querySelectorAll('[data-auth=join]').forEach(function(a){a.textContent=d.user.nick+'님';a.href=a.href.replace('#/signup','#/')});
   document.querySelectorAll('[data-auth=login]').forEach(function(a){a.textContent='로그아웃';a.href='#';a.addEventListener('click',function(e){e.preventDefault();fetch('/api/logout',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:'{}'}).then(function(){location.reload()})})});
 }).catch(function(){})})();
+
+/* 모션: 스크롤 등장(한 번만) + 읽기 진행 표시줄. 실패하면 내용은 그대로 보인다. */
+(function () {
+  var d = document, root = d.documentElement, body = d.body;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var els = [].slice.call(d.querySelectorAll('.mo'));
+  if (els.length && !reduce && !body.classList.contains('no-mo') && 'IntersectionObserver' in window) {
+    root.classList.add('mo-on');
+    var first = true;
+    var io = new IntersectionObserver(function (es) {
+      var vis = es.filter(function (x) { return x.isIntersecting });
+      if (!vis.length) return;
+      var base = first ? 0.22 : 0; first = false;
+      vis.forEach(function (x, i) { x.target.style.setProperty('--mo-d', (base + Math.min(i, 4) * 0.06).toFixed(2) + 's'); x.target.classList.add('in'); io.unobserve(x.target) });
+    }, { threshold: .08, rootMargin: '0px 0px -4% 0px' });
+    els.forEach(function (el) { io.observe(el) });
+    setTimeout(function () { els.forEach(function (el) { el.classList.add('in') }) }, 4000); // 안전장치
+  }
+  var hd = d.getElementById('hd');
+  if (hd && d.querySelector('.gal')) {
+    var bar = d.createElement('div'); bar.className = 'rp'; bar.setAttribute('aria-hidden', 'true'); bar.innerHTML = '<i></i>'; hd.appendChild(bar);
+    var fill = bar.firstChild;
+    function upd() { var h = root.scrollHeight - innerHeight; fill.style.transform = 'scaleX(' + (h > 0 ? Math.min(1, scrollY / h) : 0) + ')' }
+    addEventListener('scroll', upd, { passive: true }); addEventListener('resize', upd); upd();
+  }
+})();

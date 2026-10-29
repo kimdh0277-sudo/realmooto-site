@@ -21,7 +21,7 @@
 
   function bar() {
     var right = user
-      ? [h('span', { class: 'cm-who', text: user.nick + (user.role === 'admin' ? ' (관리자)' : '') + '님' }), h('button', { class: 'btn sm ghost', text: '로그아웃', onclick: function () { api('logout', 'POST', {}).then(function () { user = null; route(); }); } })]
+      ? [h('span', { class: 'cm-who', text: user.nick + (user.role === 'admin' ? ' (관리자)' : '') + '님' }), h('button', { class: 'btn sm ghost', text: '로그아웃', onclick: function () { api('logout', 'POST', {}).then(function () { user = null; location.reload(); }); } })]
       : [h('a', { class: 'btn sm ghost', href: '#/login', text: '로그인' }), h('a', { class: 'btn sm', href: '#/signup', text: '회원가입' })];
     return h('div', { class: 'cm-bar' }, right);
   }
@@ -49,6 +49,13 @@
     }).catch(function (e) { mount(head.concat([msg(e.message)])); });
   }
 
+  // 공개 화면과 미리보기가 같은 함수를 쓴다 (motion=false면 모션 없음)
+  function article(p, motion, meta) {
+    function e(i, n) { n.classList.add('mo-e'); n.style.setProperty('--mo-i', i); return n }
+    return h('article', { class: 'cm-post' + (motion ? '' : ' no-mo') }, [
+      e(0, h('span', { class: 'cm-tag', text: NAME[p.board] })), e(1, h('h2', { text: p.title })), e(2, h('small', { text: meta })), e(3, h('div', { class: 'cm-body', text: p.body }))]);
+  }
+
   function post(id) {
     mount([bar(), msg('불러오는 중…')]);
     api('posts/' + id).then(function (d) {
@@ -62,10 +69,7 @@
       });
       var form = me ? h('div', { class: 'cm-cform' }, [ta, h('button', { class: 'btn sm gold', text: '댓글 등록', onclick: function () { api('posts/' + id + '/comments', 'POST', { body: ta.value }).then(function () { post(id); }).catch(function (e) { alert(e.message); }); } })])
         : h('p', { class: 'cm-msg' }, [h('a', { href: '#/login', text: '로그인' }), ' 후 댓글을 쓸 수 있습니다.']);
-      mount([bar(), h('article', { class: 'cm-post' }, [
-        h('span', { class: 'cm-tag', text: NAME[p.board] }), h('h2', { text: p.title }),
-        h('small', { text: p.nick + ' · ' + date(p.created) + ' · 조회 ' + (p.views + 1) }),
-        h('div', { class: 'cm-body', text: p.body })]),
+      mount([bar(), article(p, p.motion !== 0, p.nick + ' · ' + date(p.created) + ' · 조회 ' + (p.views + 1)),
         h('div', { class: 'cm-foot' }, [h('a', { class: 'btn sm ghost', href: '#/b/' + p.board, text: '목록' }),
           (me && (me.id === p.user_id || me.role === 'admin')) ? h('button', { class: 'btn sm ghost', text: '삭제', onclick: function () { if (confirm('글을 삭제할까요?')) api('posts/' + id, 'DELETE').then(function () { go('#/b/' + p.board); }); } }) : null]),
         h('h3', { class: 'cm-h', text: '댓글 ' + d.comments.length }), h('div', {}, cms), form]);
@@ -77,13 +81,25 @@
     var opts = BOARDS.filter(function (b) { return b[0] !== 'all' && (b[0] !== 'magazine' || user.role === 'admin'); });
     var sel = h('select', {}, opts.map(function (b) { var o = h('option', { value: b[0], text: b[1] }); if (b[0] === board) o.selected = true; return o; }));
     var t = h('input', { type: 'text', maxlength: '80', placeholder: '제목' }), b = h('textarea', { rows: '12', maxlength: '5000', placeholder: '내용을 입력하세요 (광고·홍보성 글은 삭제될 수 있습니다)' }), er = h('p', { class: 'cm-err' });
-    mount([bar(), h('h2', { class: 'cm-h', text: '글쓰기' }), h('div', { class: 'cm-form' }, [sel, t, b, er, h('button', { class: 'btn gold', text: '등록', onclick: function () { api('posts', 'POST', { board: sel.value, title: t.value, body: b.value }).then(function (r) { go('#/p/' + r.id); }).catch(function (e) { er.textContent = e.message; }); } })])]);
+    var admin = user.role === 'admin';
+    var mo = h('select', { 'aria-label': '모션' }, [h('option', { value: '1', text: '모션: 기본 모션' }), h('option', { value: '0', text: '모션: 모션 없음' })]);
+    var pv = h('div', { class: 'cm-prev' });
+    function preview() {
+      pv.textContent = '';
+      if (!t.value.trim() && !b.value.trim()) { er.textContent = '제목이나 내용을 입력하면 미리볼 수 있습니다'; return; }
+      er.textContent = '';
+      pv.appendChild(h('p', { class: 'cm-msg', text: '미리보기 (실제 공개 화면과 동일)' }));
+      pv.appendChild(article({ board: sel.value, title: t.value || '(제목 없음)', body: b.value }, mo.value !== '0', user.nick + ' · 방금 · 조회 0'));
+    }
+    mount([bar(), h('h2', { class: 'cm-h', text: '글쓰기' }), h('div', { class: 'cm-form' }, [sel, admin ? mo : null, t, b, er,
+      h('div', { class: 'cm-act' }, [admin ? h('button', { class: 'btn ghost', type: 'button', text: '미리보기', onclick: preview }) : null,
+        h('button', { class: 'btn gold', text: '등록', onclick: function () { api('posts', 'POST', { board: sel.value, title: t.value, body: b.value, motion: admin && mo.value === '0' ? 0 : 1 }).then(function (r) { go('#/p/' + r.id); }).catch(function (e) { er.textContent = e.message; }); } })]), pv])]);
   }
 
   function auth(signup) {
     var f = { email: h('input', { type: 'email', placeholder: '이메일', autocomplete: 'email' }), pw: h('input', { type: 'password', placeholder: signup ? '비밀번호 (8자 이상)' : '비밀번호', autocomplete: signup ? 'new-password' : 'current-password' }), nick: h('input', { type: 'text', placeholder: '닉네임 (2~12자)', maxlength: '12' }) };
     var er = h('p', { class: 'cm-err' });
-    function submit() { api(signup ? 'signup' : 'login', 'POST', { email: f.email.value, pw: f.pw.value, nick: f.nick.value }).then(function () { return api('me'); }).then(function (d) { user = d.user; go('#/'); }).catch(function (e) { er.textContent = e.message; }); }
+    function submit() { api(signup ? 'signup' : 'login', 'POST', { email: f.email.value, pw: f.pw.value, nick: f.nick.value }).then(function () { return api('me'); }).then(function (d) { user = d.user; location.hash = '#/'; location.reload(); }).catch(function (e) { er.textContent = e.message; }); }
     f.pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
     mount([bar(), h('h2', { class: 'cm-h', text: signup ? '회원가입' : '로그인' }), h('div', { class: 'cm-form' }, [f.email, signup ? f.nick : null, f.pw, er, h('button', { class: 'btn gold', text: signup ? '가입하기' : '로그인', onclick: submit }),
       h('a', { class: 'cm-sw', href: signup ? '#/login' : '#/signup', text: signup ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입' })])]);
