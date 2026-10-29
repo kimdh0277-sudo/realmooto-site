@@ -54,3 +54,10 @@
   go(0);
 })();
 
+
+/* 로그인 상태 표시 */
+(function(){fetch('/api/me',{credentials:'same-origin'}).then(function(r){return r.ok?r.json():null}).then(function(d){
+  if(!d||!d.user)return;
+  document.querySelectorAll('[data-auth=join]').forEach(function(a){a.textContent=d.user.nick+'님';a.href=a.href.replace('#/signup','#/')});
+  document.querySelectorAll('[data-auth=login]').forEach(function(a){a.textContent='로그아웃';a.href='#';a.addEventListener('click',function(e){e.preventDefault();fetch('/api/logout',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:'{}'}).then(function(){location.reload()})})});
+}).catch(function(){})})();
