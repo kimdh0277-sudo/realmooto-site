@@ -204,3 +204,13 @@ html{-webkit-text-size-adjust:100%;scroll-padding-top:72px}
  img{max-width:100%;height:auto}
 }
 @media (hover:none){a:active,.btn:active{opacity:.85}}
+
+/* v7 우측 플로팅 바로가기 */
+.fab{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:40;display:flex;flex-direction:column;gap:12px}
+.fab a{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;box-shadow:0 6px 18px rgba(0,0,0,.45);transition:transform .2s}
+.fab a:hover{transform:scale(1.08)}
+.f-ig{background:linear-gradient(45deg,#f9a03c,#e1306c 55%,#c13584)}
+.f-kk{background:#FEE500}
+.f-tel{background:#2f7bff}
+.f-bl{background:#03c75a}
+@media(max-width:760px){.fab{right:10px;top:auto;bottom:calc(84px + env(safe-area-inset-bottom));transform:none;gap:10px}.fab a{width:46px;height:46px}}
