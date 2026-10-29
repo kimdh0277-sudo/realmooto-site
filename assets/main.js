@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   var d = document, $ = function (s, r) { return (r || d).querySelector(s) }, $$ = function (s, r) { return [].slice.call((r || d).querySelectorAll(s)) };
   var hd = $('#hd'); function sc() { hd.classList.toggle('sc', scrollY > 30) } sc(); addEventListener('scroll', sc, { passive: true });
   // theme
@@ -12,10 +12,31 @@
   var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (x) { if (x.isIntersecting) { x.target.classList.add('in'); io.unobserve(x.target) } }) }, { threshold: .12, rootMargin: '0px 0px -6% 0px' }) : null;
   $$('.tx').forEach(function (el) { io ? io.observe(el) : el.classList.add('in') });
   $$('.rv').forEach(function (el, i) { el.style.setProperty('--d', (i % 3) * .08 + 's'); io ? io.observe(el) : el.classList.add('in') });
-  // filter
-  var fl = $$('.filters button');
-  fl.forEach(function (b) { b.onclick = function () { fl.forEach(function (x) { x.classList.toggle('on', x === b) }); $$('#works .wk').forEach(function (c) { c.hidden = !(b.dataset.f === 'all' || c.dataset.cat === b.dataset.f) }) } });
-  // lightbox
+  // 시공사례 필터·검색 (카테고리 + 차량명, 결과 개수 안내)
+  var pw = $('#works.pf-grid');
+  if (pw) {
+    var cards = $$('.wk', pw), chips = $$('.filters button'), qi = $('#pq'), cnt = $('#pcnt'), emp = $('#pempty'), cat = 'all';
+    var norm = function (t) { return String(t).toLowerCase().replace(/[\s\-_.·]/g, '') };
+    cards.forEach(function (c) { c._k = norm(c.dataset.name) });
+    function apply(push) {
+      var q = norm(qi.value), shown = 0, per = { all: 0 };
+      cards.forEach(function (c) {
+        var okq = !q || c._k.indexOf(q) > -1, okc = cat === 'all' || c.dataset.cat === cat;
+        if (okq) { per.all++; per[c.dataset.cat] = (per[c.dataset.cat] || 0) + 1 }
+        c.hidden = !(okq && okc); if (okq && okc) shown++;
+      });
+      chips.forEach(function (b) { var on = b.dataset.f === cat; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); var n = $('em', b); if (n) n.textContent = per[b.dataset.f] || 0 });
+      var name = cat === 'all' ? '전체' : $('[data-f="' + cat + '"]').firstChild.textContent;
+      cnt.textContent = (q ? '“' + qi.value.trim() + '” ' : '') + name + ' ' + shown + '건';
+      emp.hidden = shown > 0;
+      if (push) { var u = new URLSearchParams(); if (cat !== 'all') u.set('cat', cat); if (qi.value.trim()) u.set('q', qi.value.trim()); try { history.replaceState(null, '', location.pathname + (u.toString() ? '?' + u : '')) } catch (e) { } }
+    }
+    chips.forEach(function (b) { b.addEventListener('click', function () { cat = b.dataset.f; apply(true) }) });
+    qi.addEventListener('input', function () { apply(true) });
+    $('#preset').addEventListener('click', function () { cat = 'all'; qi.value = ''; apply(true); qi.focus() });
+    var sp = new URLSearchParams(location.search); if (sp.get('cat') && $('[data-f="' + sp.get('cat') + '"]')) cat = sp.get('cat'); if (sp.get('q')) qi.value = sp.get('q');
+    apply(false);
+  }  // lightbox
   var lb = $('#lb'), gi = $$('.gi'), cur = 0;
   if (gi.length) {
     var li = $('img', lb); function show(i) { cur = (i + gi.length) % gi.length; li.src = gi[cur].href; lb.hidden = false }
