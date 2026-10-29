@@ -98,11 +98,16 @@
 
   function auth(signup) {
     var f = { email: h('input', { type: 'email', placeholder: '이메일', autocomplete: 'email' }), pw: h('input', { type: 'password', placeholder: signup ? '비밀번호 (8자 이상)' : '비밀번호', autocomplete: signup ? 'new-password' : 'current-password' }), nick: h('input', { type: 'text', placeholder: '닉네임 (2~12자)', maxlength: '12' }) };
-    var er = h('p', { class: 'cm-err' });
+    var er = h('p', { class: 'cm-err' }), soc = h('div', { class: 'cm-soc' });
     function submit() { api(signup ? 'signup' : 'login', 'POST', { email: f.email.value, pw: f.pw.value, nick: f.nick.value }).then(function () { return api('me'); }).then(function (d) { user = d.user; location.hash = '#/'; location.reload(); }).catch(function (e) { er.textContent = e.message; }); }
     f.pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
     mount([bar(), h('h2', { class: 'cm-h', text: signup ? '회원가입' : '로그인' }), h('div', { class: 'cm-form' }, [f.email, signup ? f.nick : null, f.pw, er, h('button', { class: 'btn gold', text: signup ? '가입하기' : '로그인', onclick: submit }),
-      h('a', { class: 'cm-sw', href: signup ? '#/login' : '#/signup', text: signup ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입' })])]);
+      h('a', { class: 'cm-sw', href: signup ? '#/login' : '#/signup', text: signup ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입' })]), soc]);
+    if (/e=1/.test(location.hash)) er.textContent = '간편 로그인에 실패했습니다. 다시 시도해 주세요.';
+    fetch('/api/auth/providers').then(function (r) { return r.json() }).then(function (o) {
+      [['kakao', '카카오로 시작하기'], ['naver', '네이버로 시작하기'], ['google', '구글로 시작하기']].forEach(function (p) { if (o[p[0]]) soc.appendChild(h('a', { class: 'cm-s ' + p[0], href: '/api/auth/' + p[0] + '/start', text: p[1] })) });
+      if (soc.firstChild) soc.insertBefore(h('p', { class: 'cm-or', text: '또는 간편하게' }), soc.firstChild);
+    }).catch(function () { });
   }
 
   function route() {
