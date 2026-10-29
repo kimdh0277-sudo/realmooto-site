@@ -56,6 +56,19 @@ export async function onRequest({ request: req, env, params }) {
   const user = await me(req, db);
   if (path === 'me') return json({ user });
 
+  // 사진 첨부: 브라우저에서 줄인 JPEG를 D1에 base64로 저장 (shortcut: 글을 지워도 사진 행은 남음, 사진이 많아지면 R2로 이전)
+  if (path === 'images' && m === 'POST') {
+    if (!user) return err('로그인이 필요합니다', 401);
+    const d = String(body.data || '');
+    if (d.length > 600000 || !/^[A-Za-z0-9+/]+=*$/.test(d)) return err('사진이 너무 크거나 형식이 맞지 않습니다');
+    let bytes; try { bytes = unb64(d); } catch { return err('사진 형식이 맞지 않습니다'); }
+    if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return err('JPG 사진만 올릴 수 있습니다');
+    await db.prepare('CREATE TABLE IF NOT EXISTS images(id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, data TEXT NOT NULL, created INTEGER NOT NULL)').run();
+    if (user.role !== 'admin' && (await db.prepare('SELECT COUNT(*) n FROM images WHERE user_id=? AND created>?').bind(user.id, Date.now() - 6e5).first()).n >= 20) return err('잠시 후 다시 올려 주세요', 429);
+    const r = await db.prepare('INSERT INTO images(user_id,data,created) VALUES(?,?,?)').bind(user.id, d, Date.now()).run();
+    return json({ id: r.meta.last_row_id });
+  }
+
   if (path === 'posts' && m === 'GET') {
     const board = url.searchParams.get('board') || '', pg = Math.max(1, +url.searchParams.get('page') || 1);
     const w = board in BOARDS ? 'WHERE p.board=?' : '', a = board in BOARDS ? [board] : [];
@@ -68,11 +81,17 @@ export async function onRequest({ request: req, env, params }) {
     if (!(board in BOARDS)) return err('게시판을 선택해 주세요');
     if (BOARDS[board] && user.role !== 'admin') return err('관리자만 작성할 수 있습니다', 403);
     if (!title || !text) return err('제목과 내용을 입력해 주세요');
+    if ((text.match(/\[img:\d+\]/g) || []).length > 4) return err('사진은 최대 4장까지 올릴 수 있습니다');
     if (user.role !== 'admin' && (await db.prepare('SELECT COUNT(*) n FROM posts WHERE user_id=? AND created>?').bind(user.id, Date.now() - 6e5).first()).n >= 5) return err('잠시 후 다시 작성해 주세요', 429);
     const r = await db.prepare('INSERT INTO posts(board,user_id,title,body,created,motion) VALUES(?,?,?,?,?,?)').bind(board, user.id, title, text, Date.now(), motion).run();
     return json({ id: r.meta.last_row_id });
   }
   let mm;
+  if ((mm = path.match(/^img\/(\d+)$/)) && m === 'GET') {
+    const row = await db.prepare('SELECT data FROM images WHERE id=?').bind(+mm[1]).first().catch(() => null);
+    if (!row) return err('사진을 찾을 수 없습니다', 404);
+    return new Response(unb64(row.data), { headers: { 'content-type': 'image/jpeg', 'cache-control': 'public, max-age=31536000, immutable', 'x-content-type-options': 'nosniff' } });
+  }
   if ((mm = path.match(/^posts\/(\d+)$/))) {
     const id = +mm[1];
     if (m === 'GET') {

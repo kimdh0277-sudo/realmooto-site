@@ -53,7 +53,16 @@
   function article(p, motion, meta) {
     function e(i, n) { n.classList.add('mo-e'); n.style.setProperty('--mo-i', i); return n }
     return h('article', { class: 'cm-post' + (motion ? '' : ' no-mo') }, [
-      e(0, h('span', { class: 'cm-tag', text: NAME[p.board] })), e(1, h('h2', { text: p.title })), e(2, h('small', { text: meta })), e(3, h('div', { class: 'cm-body', text: p.body }))]);
+      e(0, h('span', { class: 'cm-tag', text: NAME[p.board] })), e(1, h('h2', { text: p.title })), e(2, h('small', { text: meta })), e(3, bodyNode(p.body))]);
+  }
+  // 본문의 [img:번호] 줄은 첨부 사진으로 그린다 (번호는 숫자만 허용)
+  function bodyNode(t) {
+    var d = h('div', { class: 'cm-body' });
+    String(t).split(/\[img:(\d+)\]/).forEach(function (s, i) {
+      if (i % 2) d.appendChild(h('img', { src: '/api/img/' + s, alt: '첨부 사진', loading: 'lazy' }));
+      else if (s.trim()) d.appendChild(document.createTextNode(s.replace(/^\n+|\n+$/g, '')));
+    });
+    return d;
   }
 
   function post(id) {
@@ -84,16 +93,46 @@
     var admin = user.role === 'admin';
     var mo = h('select', { 'aria-label': '모션' }, [h('option', { value: '1', text: '모션: 기본 모션' }), h('option', { value: '0', text: '모션: 모션 없음' })]);
     var pv = h('div', { class: 'cm-prev' });
+    var ids = [], th = h('div', { class: 'cm-th' }), fi = h('input', { type: 'file', accept: 'image/*', multiple: 'multiple', style: 'display:none' });
+    function full() { return b.value + ids.map(function (i) { return '\n[img:' + i + ']'; }).join(''); }
+    function shrink(f) {
+      return new Promise(function (ok, no) {
+        var im = new Image(), u = URL.createObjectURL(f);
+        im.onload = function () {
+          URL.revokeObjectURL(u);
+          var s = Math.min(1, 1280 / Math.max(im.width, im.height)), c = document.createElement('canvas'), q = .8, d;
+          c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+          do { d = c.toDataURL('image/jpeg', q).split(',')[1]; q -= .15; } while (d.length > 550000 && q > .3);
+          ok(d);
+        };
+        im.onerror = function () { URL.revokeObjectURL(u); no(new Error('사진을 읽을 수 없습니다 (JPG·PNG 사진만 가능)')); };
+        im.src = u;
+      });
+    }
+    fi.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(fi.files); fi.value = '';
+      files.reduce(function (p, f) {
+        return p.then(function () {
+          if (ids.length >= 4) throw new Error('사진은 최대 4장까지 올릴 수 있습니다');
+          er.textContent = '사진 올리는 중…';
+          return shrink(f).then(function (d) { return api('images', 'POST', { data: d }); }).then(function (r) {
+            ids.push(r.id);
+            var w = h('div', { class: 'cm-t' }, [h('img', { src: '/api/img/' + r.id, alt: '첨부 사진' }), h('button', { type: 'button', 'aria-label': '사진 삭제', text: '×', onclick: function () { ids = ids.filter(function (x) { return x !== r.id; }); w.remove(); } })]);
+            th.appendChild(w); er.textContent = '';
+          });
+        });
+      }, Promise.resolve()).catch(function (e) { er.textContent = e.message; });
+    });
     function preview() {
       pv.textContent = '';
       if (!t.value.trim() && !b.value.trim()) { er.textContent = '제목이나 내용을 입력하면 미리볼 수 있습니다'; return; }
       er.textContent = '';
       pv.appendChild(h('p', { class: 'cm-msg', text: '미리보기 (실제 공개 화면과 동일)' }));
-      pv.appendChild(article({ board: sel.value, title: t.value || '(제목 없음)', body: b.value }, mo.value !== '0', user.nick + ' · 방금 · 조회 0'));
+      pv.appendChild(article({ board: sel.value, title: t.value || '(제목 없음)', body: full() }, mo.value !== '0', user.nick + ' · 방금 · 조회 0'));
     }
-    mount([bar(), h('h2', { class: 'cm-h', text: '글쓰기' }), h('div', { class: 'cm-form' }, [sel, admin ? mo : null, t, b, er,
+    mount([bar(), h('h2', { class: 'cm-h', text: '글쓰기' }), h('div', { class: 'cm-form' }, [sel, admin ? mo : null, t, b, h('button', { class: 'btn ghost', type: 'button', text: '사진 첨부 (최대 4장)', onclick: function () { fi.click(); } }), fi, th, er,
       h('div', { class: 'cm-act' }, [admin ? h('button', { class: 'btn ghost', type: 'button', text: '미리보기', onclick: preview }) : null,
-        h('button', { class: 'btn gold', text: '등록', onclick: function () { api('posts', 'POST', { board: sel.value, title: t.value, body: b.value, motion: admin && mo.value === '0' ? 0 : 1 }).then(function (r) { go('#/p/' + r.id); }).catch(function (e) { er.textContent = e.message; }); } })]), pv])]);
+        h('button', { class: 'btn gold', text: '등록', onclick: function () { api('posts', 'POST', { board: sel.value, title: t.value, body: full(), motion: admin && mo.value === '0' ? 0 : 1 }).then(function (r) { go('#/p/' + r.id); }).catch(function (e) { er.textContent = e.message; }); } })]), pv])]);
   }
 
   function auth(signup) {
