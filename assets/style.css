@@ -214,3 +214,15 @@ html{-webkit-text-size-adjust:100%;scroll-padding-top:72px}
 .f-tel{background:#2f7bff}
 .f-bl{background:#03c75a}
 @media(max-width:760px){.fab{right:10px;top:auto;bottom:calc(84px + env(safe-area-inset-bottom));transform:none;gap:10px}.fab a{width:46px;height:46px}}
+
+/* v8 커뮤니티 */
+.cm-bar{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:18px}.cm-who{font-weight:700}
+.cm-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:18px;scrollbar-width:none}.cm-tabs a{flex:none;padding:10px 18px;border:1px solid var(--line,#ffffff26);border-radius:999px;font-size:15px;white-space:nowrap}.cm-tabs a.on{background:#c7a56a;color:#111;border-color:#c7a56a;font-weight:700}
+.cm-list{border-top:1px solid var(--line,#ffffff26)}.cm-row{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;padding:16px 4px;border-bottom:1px solid var(--line,#ffffff1a)}.cm-row b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cm-row small{grid-column:2/4;opacity:.6}.cm-cc{color:#c7a56a;font-size:14px}
+.cm-tag{display:inline-block;padding:3px 10px;border-radius:6px;background:#ffffff14;font-size:13px;opacity:.9}
+.cm-foot{display:flex;gap:10px;justify-content:flex-end;margin:20px 0}.cm-msg{opacity:.7;padding:30px 0;text-align:center}.cm-err{color:#ff6b6b;min-height:1.2em;margin:0}
+.cm-post h2{font-size:clamp(22px,4vw,30px);margin:12px 0 8px}.cm-post small{opacity:.6}.cm-body{white-space:pre-wrap;line-height:1.8;margin-top:22px;padding-bottom:22px;border-bottom:1px solid var(--line,#ffffff26)}
+.cm-h{font-size:20px;margin:26px 0 14px}.cm-cmt{padding:14px 0;border-bottom:1px solid var(--line,#ffffff1a)}.cm-cmt p{margin:6px 0 0;white-space:pre-wrap}.cm-cmt small{opacity:.55}.cm-x{float:right;background:none;border:0;color:inherit;opacity:.6;cursor:pointer}
+.cm-form,.cm-cform{display:flex;flex-direction:column;gap:12px;max-width:560px}.cm-cform{max-width:none;align-items:flex-end}.cm-cform textarea{width:100%}
+.cm-form input,.cm-form select,.cm-form textarea,.cm-cform textarea{width:100%;padding:14px;border-radius:10px;border:1px solid var(--line,#ffffff33);background:transparent;color:inherit;font:inherit}.cm-form select option{color:#111}
+.cm-sw{opacity:.7;font-size:14px;text-align:center}
