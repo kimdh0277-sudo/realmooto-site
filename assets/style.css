@@ -325,3 +325,11 @@ html{-webkit-text-size-adjust:100%;scroll-padding-top:72px}
 .legal{max-width:760px}.legal h2{font-size:19px;margin:28px 0 8px}.legal p{line-height:1.8;color:var(--tx2)}.ft-b a{margin-left:16px;text-decoration:underline;opacity:.8}
 .cm-body img,.cm-post img{display:block;max-width:100%;height:auto;border-radius:10px;margin:14px 0}
 .cm-th{display:flex;flex-wrap:wrap;gap:8px}.cm-t{position:relative;width:88px;height:88px}.cm-t img{width:100%;height:100%;object-fit:cover;border-radius:8px}.cm-t button{position:absolute;top:2px;right:2px;width:24px;height:24px;border:0;border-radius:50%;background:#000a;color:#fff;cursor:pointer;line-height:1}
+.cm-body{white-space:normal}.cm-body::after{content:"";display:block;clear:both}
+.cm-body p{white-space:pre-line;margin:0 0 1.15em;line-height:1.95}
+.cm-body h3{clear:both;font-size:clamp(20px,3.4vw,26px);line-height:1.4;margin:2.2em 0 .9em;padding-bottom:10px;border-bottom:2px solid var(--gold,#c4a56b)}
+.cm-body mark{color:inherit;font-weight:700;background:linear-gradient(transparent 52%,#c4a56b66 52%)}
+.cm-fig{margin:6px 0 18px}.cm-fig img{margin:0}.cm-fig figcaption{font-size:12.5px;opacity:.6;margin-top:8px;line-height:1.5;text-align:center}
+@media(min-width:700px){.cm-fig.l{float:left;width:46%;margin:6px 26px 14px 0}.cm-fig.r{float:right;width:46%;margin:6px 0 14px 26px}}
+.cm-cta{display:flex;flex-wrap:wrap;gap:10px;margin:26px 0;clear:both}
+.cm-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;clear:both}.cm-tags span{font-size:13px;padding:5px 12px;border:1px solid var(--line,#ffffff33);border-radius:99px;opacity:.8}

@@ -77,11 +77,11 @@ export async function onRequest({ request: req, env, params }) {
   }
   if (path === 'posts' && m === 'POST') {
     if (!user) return err('로그인이 필요합니다', 401);
-    const board = String(body.board || ''), title = clean(body.title, 80), text = clean(body.body, 5000), motion = user.role === 'admin' && body.motion === 0 ? 0 : 1;
+    const board = String(body.board || ''), title = clean(body.title, 80), text = clean(body.body, user.role === 'admin' ? 12000 : 5000), motion = user.role === 'admin' && body.motion === 0 ? 0 : 1;
     if (!(board in BOARDS)) return err('게시판을 선택해 주세요');
     if (BOARDS[board] && user.role !== 'admin') return err('관리자만 작성할 수 있습니다', 403);
     if (!title || !text) return err('제목과 내용을 입력해 주세요');
-    if ((text.match(/\[img:\d+\]/g) || []).length > 4) return err('사진은 최대 4장까지 올릴 수 있습니다');
+    if ((text.match(/\[img:\d+[|\]]/g) || []).length > (user.role === 'admin' ? 24 : 4)) return err('사진은 최대 4장까지 올릴 수 있습니다');
     if (user.role !== 'admin' && (await db.prepare('SELECT COUNT(*) n FROM posts WHERE user_id=? AND created>?').bind(user.id, Date.now() - 6e5).first()).n >= 5) return err('잠시 후 다시 작성해 주세요', 429);
     const r = await db.prepare('INSERT INTO posts(board,user_id,title,body,created,motion) VALUES(?,?,?,?,?,?)').bind(board, user.id, title, text, Date.now(), motion).run();
     return json({ id: r.meta.last_row_id });

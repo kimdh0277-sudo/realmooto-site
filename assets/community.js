@@ -55,13 +55,28 @@
     return h('article', { class: 'cm-post' + (motion ? '' : ' no-mo') }, [
       e(0, h('span', { class: 'cm-tag', text: NAME[p.board] })), e(1, h('h2', { text: p.title })), e(2, h('small', { text: meta })), e(3, bodyNode(p.body))]);
   }
-  // 본문의 [img:번호] 줄은 첨부 사진으로 그린다 (번호는 숫자만 허용)
+  // 본문 서식 (모두 textContent로만 그려 HTML 주입 불가):
+  // 빈 줄=문단, "## 제목"=소제목, **강조**, [img:번호]=사진, [img:번호|설명]=설명 있는 사진(좌우 교대), [tel]=상담 버튼, "#태그 #태그"=태그 줄
+  function inline(s) {
+    var f = document.createDocumentFragment();
+    String(s).split(/\*\*(.+?)\*\*/g).forEach(function (x, i) { if (x) f.appendChild(i % 2 ? h('mark', { text: x }) : document.createTextNode(x)); });
+    return f;
+  }
   function bodyNode(t) {
-    var d = h('div', { class: 'cm-body' });
-    String(t).split(/\[img:(\d+)\]/).forEach(function (s, i) {
-      if (i % 2) d.appendChild(h('img', { src: '/api/img/' + s, alt: '첨부 사진', loading: 'lazy' }));
-      else if (s.trim()) d.appendChild(document.createTextNode(s.replace(/^\n+|\n+$/g, '')));
+    var d = h('div', { class: 'cm-body' }), n = 0, para = [];
+    function flush() { if (para.length) { var p = h('p'); p.appendChild(inline(para.join('\n'))); d.appendChild(p); para = []; } }
+    String(t).split('\n').forEach(function (l) {
+      var s = l.trim(), m;
+      if (!s) return flush();
+      if ((m = s.match(/^\[img:(\d+)(?:\|(.*))?\]$/))) {
+        flush();
+        d.appendChild(h('figure', { class: 'cm-fig' + (m[2] ? (n++ % 2 ? ' r' : ' l') : '') }, [h('img', { src: '/api/img/' + m[1], alt: m[2] || '첨부 사진', loading: 'lazy' }), m[2] ? h('figcaption', { text: m[2] }) : null]));
+      } else if (s.slice(0, 3) === '## ') { flush(); d.appendChild(h('h3', { text: s.slice(3) })); }
+      else if (s === '[tel]') { flush(); d.appendChild(h('div', { class: 'cm-cta' }, [h('a', { class: 'btn gold', href: 'tel:01080723550', text: '전화 상담 010-8072-3550' }), h('a', { class: 'btn ghost', href: 'https://open.kakao.com/o/sw33ruyf', target: '_blank', rel: 'noopener', text: '카카오톡 상담' })])); }
+      else if (/^(#\S+\s*)+$/.test(s)) { flush(); d.appendChild(h('div', { class: 'cm-tags' }, s.split(/\s+/).map(function (x) { return h('span', { text: x }); }))); }
+      else para.push(l);
     });
+    flush();
     return d;
   }
 
@@ -94,7 +109,8 @@
     var mo = h('select', { 'aria-label': '모션' }, [h('option', { value: '1', text: '모션: 기본 모션' }), h('option', { value: '0', text: '모션: 모션 없음' })]);
     var pv = h('div', { class: 'cm-prev' });
     var ids = [], th = h('div', { class: 'cm-th' }), fi = h('input', { type: 'file', accept: 'image/*', multiple: 'multiple', style: 'display:none' });
-    function full() { return b.value + ids.map(function (i) { return '\n[img:' + i + ']'; }).join(''); }
+    var MAXI = user.role === 'admin' ? 24 : 4;
+    function full() { return b.value + ids.filter(function (i) { return b.value.indexOf('[img:' + i + ']') < 0 && b.value.indexOf('[img:' + i + '|') < 0; }).map(function (i) { return '\n[img:' + i + ']'; }).join(''); }
     function shrink(f) {
       return new Promise(function (ok, no) {
         var im = new Image(), u = URL.createObjectURL(f);
@@ -113,7 +129,7 @@
       var files = Array.prototype.slice.call(fi.files); fi.value = '';
       files.reduce(function (p, f) {
         return p.then(function () {
-          if (ids.length >= 4) throw new Error('사진은 최대 4장까지 올릴 수 있습니다');
+          if (ids.length >= MAXI) throw new Error('사진은 최대 ' + MAXI + '장까지 올릴 수 있습니다');
           er.textContent = '사진 올리는 중…';
           return shrink(f).then(function (d) { return api('images', 'POST', { data: d }); }).then(function (r) {
             ids.push(r.id);
@@ -130,7 +146,7 @@
       pv.appendChild(h('p', { class: 'cm-msg', text: '미리보기 (실제 공개 화면과 동일)' }));
       pv.appendChild(article({ board: sel.value, title: t.value || '(제목 없음)', body: full() }, mo.value !== '0', user.nick + ' · 방금 · 조회 0'));
     }
-    mount([bar(), h('h2', { class: 'cm-h', text: '글쓰기' }), h('div', { class: 'cm-form' }, [sel, admin ? mo : null, t, b, h('button', { class: 'btn ghost', type: 'button', text: '사진 첨부 (최대 4장)', onclick: function () { fi.click(); } }), fi, th, er,
+    mount([bar(), h('h2', { class: 'cm-h', text: '글쓰기' }), h('div', { class: 'cm-form' }, [sel, admin ? mo : null, t, b, h('button', { class: 'btn ghost', type: 'button', text: '사진 첨부 (최대 ' + MAXI + '장)', onclick: function () { fi.click(); } }), fi, th, er,
       h('div', { class: 'cm-act' }, [admin ? h('button', { class: 'btn ghost', type: 'button', text: '미리보기', onclick: preview }) : null,
         h('button', { class: 'btn gold', text: '등록', onclick: function () { api('posts', 'POST', { board: sel.value, title: t.value, body: full(), motion: admin && mo.value === '0' ? 0 : 1 }).then(function (r) { go('#/p/' + r.id); }).catch(function (e) { er.textContent = e.message; }); } })]), pv])]);
   }
