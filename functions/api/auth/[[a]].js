@@ -5,7 +5,7 @@ const P = {
   kakao: { auth: 'https://kauth.kakao.com/oauth/authorize', token: 'https://kauth.kakao.com/oauth/token', me: 'https://kapi.kakao.com/v2/user/me', scope: '',
     parse: (j) => ({ pid: String(j.id), nick: j.kakao_account?.profile?.nickname || j.properties?.nickname, email: j.kakao_account?.email }) },
   naver: { auth: 'https://nid.naver.com/oauth2.0/authorize', token: 'https://nid.naver.com/oauth2.0/token', me: 'https://openapi.naver.com/v1/nid/me', scope: '',
-    parse: (j) => ({ pid: String(j.response?.id), nick: j.response?.nickname || j.response?.name, email: j.response?.email }) },
+    parse: (j) => ({ pid: j.resultcode === '00' ? String(j.response?.id) : '', nick: j.response?.nickname || j.response?.name, email: j.response?.email }) },
   google: { auth: 'https://accounts.google.com/o/oauth2/v2/auth', token: 'https://oauth2.googleapis.com/token', me: 'https://openidconnect.googleapis.com/v1/userinfo', scope: 'openid email profile',
     parse: (j) => ({ pid: String(j.sub), nick: j.name, email: j.email }) },
 };
@@ -16,12 +16,13 @@ const sha = async (s) => b64(await crypto.subtle.digest('SHA-256', enc.encode(s)
 const cookie = (req, n) => ((req.headers.get('cookie') || '').match(new RegExp('(?:^|; )' + n + '=([^;]*)')) || [])[1] || '';
 const ck = (n, v, age) => `${n}=${v}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${age}`;
 const keys = (env, p) => [env[p.toUpperCase() + '_ID'], env[p.toUpperCase() + '_SECRET']];
+const ready = (env, p) => keys(env, p).every(Boolean); // ID와 시크릿이 둘 다 있어야 켜짐
 
 export async function onRequest({ request: req, env, params }) {
   const [p, act] = params.a || [], url = new URL(req.url);
-  if (p === 'providers') return Response.json(Object.fromEntries(Object.keys(P).map((k) => [k, !!keys(env, k)[0]])), { headers: { 'cache-control': 'no-store' } });
+  if (p === 'providers') return Response.json(Object.fromEntries(Object.keys(P).map((k) => [k, ready(env, k)])), { headers: { 'cache-control': 'no-store' } });
   const cfg = P[p]; const [id, secret] = cfg ? keys(env, p) : [];
-  if (!cfg || !id || !['start', 'callback'].includes(act)) return new Response('not found', { status: 404 });
+  if (!cfg || !ready(env, p) || !['start', 'callback'].includes(act)) return new Response('not found', { status: 404 });
   if (url.origin !== SITE) return Response.redirect(`${SITE}/api/auth/${p}/${act}${url.search}`, 302); // 쿠키·등록 주소를 대표 주소 하나로 고정
   const redirect_uri = `${SITE}/api/auth/${p}/callback`;
 
@@ -32,13 +33,15 @@ export async function onRequest({ request: req, env, params }) {
     return new Response(null, { status: 302, headers: { Location: `${cfg.auth}?${q}`, 'set-cookie': ck('oauth_state', state, 600) } });
   }
 
-  const fail = () => new Response(null, { status: 302, headers: { Location: `${SITE}/community.html#/login?e=1`, 'set-cookie': ck('oauth_state', '', 0) } });
+  const fail = (e = 1) => new Response(null, { status: 302, headers: { Location: `${SITE}/community.html#/login?e=${e}`, 'set-cookie': ck('oauth_state', '', 0) } });
   const code = url.searchParams.get('code'), state = url.searchParams.get('state');
+  if (url.searchParams.get('error') && state && state === cookie(req, 'oauth_state')) return fail(2); // 동의 거부·취소
   if (!code || !state || state !== cookie(req, 'oauth_state')) return fail();
   try {
     const body = new URLSearchParams({ grant_type: 'authorization_code', client_id: id, redirect_uri, code, state });
     if (secret) body.set('client_secret', secret);
-    const t = await (await fetch(cfg.token, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body })).json();
+    let t = await (await fetch(cfg.token, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body })).json().catch(() => ({}));
+    if (!t.access_token && p === 'naver') t = await (await fetch(`${cfg.token}?${body}`)).json().catch(() => ({})); // shortcut: 네이버 토큰 API의 POST/GET 허용을 공식 문서로 확인 못 함, 실제 로그인 확인 뒤 불필요하면 삭제
     if (!t.access_token) return fail();
     const prof = cfg.parse(await (await fetch(cfg.me, { headers: { authorization: `Bearer ${t.access_token}` } })).json());
     if (!prof.pid || prof.pid === 'undefined') return fail();

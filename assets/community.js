@@ -103,7 +103,7 @@
     f.pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
     mount([bar(), h('h2', { class: 'cm-h', text: signup ? '회원가입' : '로그인' }), h('div', { class: 'cm-form' }, [f.email, signup ? f.nick : null, f.pw, er, h('button', { class: 'btn gold', text: signup ? '가입하기' : '로그인', onclick: submit }),
       h('a', { class: 'cm-sw', href: signup ? '#/login' : '#/signup', text: signup ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입' })]), soc]);
-    if (/e=1/.test(location.hash)) er.textContent = '간편 로그인에 실패했습니다. 다시 시도해 주세요.';
+    if (/e=2/.test(location.hash)) er.textContent = '간편 로그인을 취소했습니다.'; else if (/e=1/.test(location.hash)) er.textContent = '간편 로그인에 실패했습니다. 다시 시도해 주세요.';
     fetch('/api/auth/providers').then(function (r) { return r.json() }).then(function (o) {
       [['kakao', '카카오로 시작하기'], ['naver', '네이버로 시작하기'], ['google', '구글로 시작하기']].forEach(function (p) { if (o[p[0]]) soc.appendChild(h('a', { class: 'cm-s ' + p[0], href: '/api/auth/' + p[0] + '/start', text: p[1] })) });
       if (soc.firstChild) soc.insertBefore(h('p', { class: 'cm-or', text: '또는 간편하게' }), soc.firstChild);
