@@ -1,7 +1,8 @@
 (function () {
   var root = document.getElementById('cm'); if (!root) return;
   var BOARDS = [['all', '전체'], ['magazine', '매거진'], ['free', '게시판'], ['review', '시공후기'], ['qna', '질문'], ['jobs', '구인/구직'], ['club', '동호회/모임']];
-  var NAME = {}; BOARDS.forEach(function (b) { NAME[b[0]] = b[1]; });
+  var REG = [['seoul', '서울'], ['gyeonggi', '경기'], ['incheon', '인천'], ['daejeon', '대전'], ['daegu', '대구'], ['busan', '부산'], ['ulsan', '울산'], ['gyeongnam', '경남'], ['gyeongbuk', '경북'], ['gwangju', '광주'], ['chungnam', '충남'], ['chungbuk', '충북'], ['jeonnam', '전남'], ['jeonbuk', '전북'], ['gangwon', '강원'], ['jeju', '제주']];
+  var NAME = {}; BOARDS.concat(REG).forEach(function (b) { NAME[b[0]] = b[1]; });
   var user = null;
 
   function h(tag, attrs, kids) {
@@ -26,7 +27,8 @@
     return h('div', { class: 'cm-bar' }, right);
   }
   function tabs(cur) {
-    return h('div', { class: 'cm-tabs' }, BOARDS.map(function (b) { return h('a', { href: '#/' + (b[0] === 'all' ? '' : 'b/' + b[0]), class: b[0] === cur ? 'on' : '', text: b[1] }); }));
+    function row(list, cls) { return h('div', { class: 'cm-tabs' + cls }, list.map(function (b) { return h('a', { href: '#/' + (b[0] === 'all' ? '' : 'b/' + b[0]), class: b[0] === cur ? 'on' : '', text: b[1] }); })); }
+    return h('div', {}, [row(BOARDS, ''), h('p', { class: 'cm-rl', text: '지역별 게시판' }), row(REG, ' cm-reg')]);
   }
 
   function list(board, page) {
@@ -102,7 +104,7 @@
 
   function write(board) {
     if (!user) return go('#/login');
-    var opts = BOARDS.filter(function (b) { return b[0] !== 'all' && (b[0] !== 'magazine' || user.role === 'admin'); });
+    var opts = BOARDS.filter(function (b) { return b[0] !== 'all' && (b[0] !== 'magazine' || user.role === 'admin'); }).concat(REG.map(function (r) { return [r[0], '지역 · ' + r[1]]; }));
     var sel = h('select', {}, opts.map(function (b) { var o = h('option', { value: b[0], text: b[1] }); if (b[0] === board) o.selected = true; return o; }));
     var t = h('input', { type: 'text', maxlength: '80', placeholder: '제목' }), b = h('textarea', { rows: '12', maxlength: '5000', placeholder: '내용을 입력하세요 (광고·홍보성 글은 삭제될 수 있습니다)' }), er = h('p', { class: 'cm-err' });
     var admin = user.role === 'admin';
@@ -156,8 +158,8 @@
     var er = h('p', { class: 'cm-err' }), soc = h('div', { class: 'cm-soc' });
     function submit() { api(signup ? 'signup' : 'login', 'POST', { email: f.email.value, pw: f.pw.value, nick: f.nick.value }).then(function () { return api('me'); }).then(function (d) { user = d.user; location.hash = '#/'; location.reload(); }).catch(function (e) { er.textContent = e.message; }); }
     f.pw.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
-    mount([bar(), h('h2', { class: 'cm-h', text: signup ? '회원가입' : '로그인' }), h('div', { class: 'cm-form' }, [f.email, signup ? f.nick : null, f.pw, er, h('button', { class: 'btn gold', text: signup ? '가입하기' : '로그인', onclick: submit }),
-      h('a', { class: 'cm-sw', href: signup ? '#/login' : '#/signup', text: signup ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입' })]), soc]);
+    mount([bar(), h('div', { class: 'cm-auth' }, [h('h2', { class: 'cm-h', text: signup ? '회원가입' : '로그인' }), h('div', { class: 'cm-form' }, [f.email, signup ? f.nick : null, f.pw, er, h('button', { class: 'btn gold', text: signup ? '가입하기' : '로그인', onclick: submit }),
+      h('a', { class: 'cm-sw', href: signup ? '#/login' : '#/signup', text: signup ? '이미 계정이 있으신가요? 로그인' : '계정이 없으신가요? 회원가입' })]), soc])]);
     if (/e=2/.test(location.hash)) er.textContent = '간편 로그인을 취소했습니다.'; else if (/e=1/.test(location.hash)) er.textContent = '간편 로그인에 실패했습니다. 다시 시도해 주세요.';
     fetch('/api/auth/providers').then(function (r) { return r.json() }).then(function (o) {
       [['kakao', '카카오로 시작하기'], ['naver', '네이버로 시작하기'], ['google', '구글로 시작하기']].forEach(function (p) { if (o[p[0]]) soc.appendChild(h('a', { class: 'cm-s ' + p[0], href: '/api/auth/' + p[0] + '/start', text: p[1] })) });

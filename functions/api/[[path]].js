@@ -1,5 +1,6 @@
 // 리얼무토 커뮤니티 API (Cloudflare Pages Functions + D1)
-const BOARDS = { magazine: 1, free: 0, review: 0, qna: 0, jobs: 0, club: 0 }; // 1 = 관리자만 글쓰기
+const BOARDS = { magazine: 1, free: 0, review: 0, qna: 0, jobs: 0, club: 0,
+  seoul: 0, gyeonggi: 0, incheon: 0, daejeon: 0, daegu: 0, busan: 0, ulsan: 0, gyeongnam: 0, gyeongbuk: 0, gwangju: 0, chungnam: 0, chungbuk: 0, jeonnam: 0, jeonbuk: 0, gangwon: 0, jeju: 0 }; // 지역별 게시판 // 1 = 관리자만 글쓰기
 const PAGE = 15;
 const enc = new TextEncoder();
 const b64 = (u) => btoa(String.fromCharCode(...new Uint8Array(u)));

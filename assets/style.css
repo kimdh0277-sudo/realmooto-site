@@ -333,3 +333,5 @@ html{-webkit-text-size-adjust:100%;scroll-padding-top:72px}
 @media(min-width:700px){.cm-fig.l{float:left;width:46%;margin:6px 26px 14px 0}.cm-fig.r{float:right;width:46%;margin:6px 0 14px 26px}}
 .cm-cta{display:flex;flex-wrap:wrap;gap:10px;margin:26px 0;clear:both}
 .cm-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;clear:both}.cm-tags span{font-size:13px;padding:5px 12px;border:1px solid var(--line,#ffffff33);border-radius:99px;opacity:.8}
+.cm-auth{max-width:420px;margin:0 auto}.cm-auth .cm-h{text-align:center;margin-top:8px}.cm-auth .cm-form,.cm-auth .cm-soc{max-width:none}
+.cm-rl{margin:2px 0 8px;font-size:13px;opacity:.6}.cm-reg a{padding:7px 14px;font-size:14px}
