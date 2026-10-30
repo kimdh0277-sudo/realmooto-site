@@ -73,6 +73,8 @@
       if ((m = s.match(/^\[img:(\d+)(?:\|(.*))?\]$/))) {
         flush();
         d.appendChild(h('figure', { class: 'cm-fig' + (m[2] ? (n++ % 2 ? ' r' : ' l') : '') }, [h('img', { src: '/api/img/' + m[1], alt: m[2] || '첨부 사진', loading: 'lazy' }), m[2] ? h('figcaption', { text: m[2] }) : null]));
+      } else if ((m = s.match(/^\[video:([\w-]{11})\]$/))) {
+        flush(); d.appendChild(h('div', { class: 'cm-vid' }, [h('iframe', { src: 'https://www.youtube-nocookie.com/embed/' + m[1], title: '첨부 동영상', loading: 'lazy', allowfullscreen: '', referrerpolicy: 'strict-origin-when-cross-origin' })]));
       } else if (s.slice(0, 3) === '## ') { flush(); d.appendChild(h('h3', { text: s.slice(3) })); }
       else if (s === '[tel]') { flush(); d.appendChild(h('div', { class: 'cm-cta' }, [h('a', { class: 'btn gold', href: 'tel:01080723550', text: '전화 상담 010-8072-3550' }), h('a', { class: 'btn ghost', href: 'https://open.kakao.com/o/sw33ruyf', target: '_blank', rel: 'noopener', text: '카카오톡 상담' })])); }
       else if (/^(#\S+\s*)+$/.test(s)) { flush(); d.appendChild(h('div', { class: 'cm-tags' }, s.split(/\s+/).map(function (x) { return h('span', { text: x }); }))); }
@@ -141,6 +143,14 @@
         });
       }, Promise.resolve()).catch(function (e) { er.textContent = e.message; });
     });
+    // 동영상은 유튜브 링크만 (파일 직접 업로드는 저장 공간 문제로 미지원)
+    var vi = h('input', { type: 'url', placeholder: '유튜브 영상 링크 붙여넣기 (선택)', 'aria-label': '유튜브 영상 링크' });
+    function addVideo() {
+      var m = vi.value.match(/(?:youtu\.be\/|[?&]v=|shorts\/|embed\/)([\w-]{11})/);
+      if (!m) { er.textContent = '유튜브 링크를 확인해 주세요 (youtube.com 또는 youtu.be 주소)'; return; }
+      if ((b.value.match(/\[video:/g) || []).length >= (user.role === 'admin' ? 10 : 2)) { er.textContent = '영상은 최대 2개까지 넣을 수 있습니다'; return; }
+      b.value += (b.value && !/\n$/.test(b.value) ? '\n' : '') + '[video:' + m[1] + ']\n'; vi.value = ''; er.textContent = '영상이 본문에 추가되었습니다 (미리보기/등록 시 재생 화면으로 표시)';
+    }
     function preview() {
       pv.textContent = '';
       if (!t.value.trim() && !b.value.trim()) { er.textContent = '제목이나 내용을 입력하면 미리볼 수 있습니다'; return; }
@@ -148,7 +158,7 @@
       pv.appendChild(h('p', { class: 'cm-msg', text: '미리보기 (실제 공개 화면과 동일)' }));
       pv.appendChild(article({ board: sel.value, title: t.value || '(제목 없음)', body: full() }, mo.value !== '0', user.nick + ' · 방금 · 조회 0'));
     }
-    mount([bar(), h('h2', { class: 'cm-h', text: '글쓰기' }), h('div', { class: 'cm-form' }, [sel, admin ? mo : null, t, b, h('button', { class: 'btn ghost', type: 'button', text: '사진 첨부 (최대 ' + MAXI + '장)', onclick: function () { fi.click(); } }), fi, th, er,
+    mount([bar(), h('h2', { class: 'cm-h', text: '글쓰기' }), h('div', { class: 'cm-form' }, [sel, admin ? mo : null, t, b, h('button', { class: 'btn ghost', type: 'button', text: '사진 첨부 (최대 ' + MAXI + '장)', onclick: function () { fi.click(); } }), fi, th, h('div', { class: 'cm-vrow' }, [vi, h('button', { class: 'btn sm ghost', type: 'button', text: '영상 추가', onclick: addVideo })]), er,
       h('div', { class: 'cm-act' }, [admin ? h('button', { class: 'btn ghost', type: 'button', text: '미리보기', onclick: preview }) : null,
         h('button', { class: 'btn gold', text: '등록', onclick: function () { api('posts', 'POST', { board: sel.value, title: t.value, body: full(), motion: admin && mo.value === '0' ? 0 : 1 }).then(function (r) { go('#/p/' + r.id); }).catch(function (e) { er.textContent = e.message; }); } })]), pv])]);
   }

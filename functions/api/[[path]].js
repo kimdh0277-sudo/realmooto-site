@@ -82,6 +82,7 @@ export async function onRequest({ request: req, env, params }) {
     if (!(board in BOARDS)) return err('게시판을 선택해 주세요');
     if (BOARDS[board] && user.role !== 'admin') return err('관리자만 작성할 수 있습니다', 403);
     if (!title || !text) return err('제목과 내용을 입력해 주세요');
+    if (user.role !== 'admin' && (text.match(/\[video:/g) || []).length > 2) return err('영상은 최대 2개까지 넣을 수 있습니다');
     if ((text.match(/\[img:\d+[|\]]/g) || []).length > (user.role === 'admin' ? 24 : 4)) return err('사진은 최대 4장까지 올릴 수 있습니다');
     if (user.role !== 'admin' && (await db.prepare('SELECT COUNT(*) n FROM posts WHERE user_id=? AND created>?').bind(user.id, Date.now() - 6e5).first()).n >= 5) return err('잠시 후 다시 작성해 주세요', 429);
     const r = await db.prepare('INSERT INTO posts(board,user_id,title,body,created,motion) VALUES(?,?,?,?,?,?)').bind(board, user.id, title, text, Date.now(), motion).run();
