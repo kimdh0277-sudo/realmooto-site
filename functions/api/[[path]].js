@@ -1,4 +1,6 @@
 // 리얼무토 커뮤니티 API (Cloudflare Pages Functions + D1)
+import { ensure } from '../_lib/core.js';
+import { alertEvent } from '../_lib/notify.js';
 const BOARDS = { magazine: 1, free: 0, review: 0, qna: 0, jobs: 0, club: 0,
   seoul: 0, gyeonggi: 0, incheon: 0, daejeon: 0, daegu: 0, busan: 0, ulsan: 0, gyeongnam: 0, gyeongbuk: 0, gwangju: 0, chungnam: 0, chungbuk: 0, jeonnam: 0, jeonbuk: 0, gangwon: 0, jeju: 0 }; // 지역별 게시판 // 1 = 관리자만 글쓰기
 const PAGE = 15;
@@ -27,8 +29,8 @@ async function startSession(db, uid) {
 }
 const clean = (s, n) => String(s || '').replace(/\r\n/g, '\n').trim().slice(0, n);
 
-export async function onRequest({ request: req, env, params }) {
-  const db = env.DB; if (!db) return err('서버 설정 중입니다', 503);
+export async function onRequest(ctx) {
+  const { request: req, env, params } = ctx, db = env.DB; if (!db) return err('서버 설정 중입니다', 503);
   const path = (params.path || []).join('/'), m = req.method, url = new URL(req.url);
   if (m !== 'GET' && !(req.headers.get('content-type') || '').includes('application/json')) return err('잘못된 요청');
   if (m !== 'GET') { const o = req.headers.get('origin'); if (o && new URL(o).host !== url.host) return err('허용되지 않은 요청', 403); }
@@ -42,6 +44,8 @@ export async function onRequest({ request: req, env, params }) {
     if (await db.prepare('SELECT 1 FROM users WHERE email=? OR nick=?').bind(email, nick).first()) return err('이미 사용 중인 이메일 또는 닉네임입니다');
     const salt = crypto.getRandomValues(new Uint8Array(16));
     const r = await db.prepare('INSERT INTO users(email,nick,pw,role,created) VALUES(?,?,?,?,?)').bind(email, nick, b64(salt) + ':' + await hashPw(pw, salt), 'user', Date.now()).run();
+    const p = (async () => { await ensure(db); await alertEvent(env, db, 'signup', 'u' + r.meta.last_row_id, [`닉네임 ${nick}`, '가입 방식 이메일']); })().catch(() => {});
+    if (ctx.waitUntil) ctx.waitUntil(p); else await p;
     return json({ ok: 1 }, 200, setSid(await startSession(db, r.meta.last_row_id), 2592000));
   }
   if (path === 'login' && m === 'POST') {

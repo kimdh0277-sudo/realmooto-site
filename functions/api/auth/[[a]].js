@@ -1,5 +1,7 @@
 // 소셜 로그인(카카오·네이버·구글): /api/auth/providers, /api/auth/{p}/start, /api/auth/{p}/callback
 // 키는 Cloudflare Pages 환경변수: KAKAO_ID/KAKAO_SECRET, NAVER_ID/NAVER_SECRET, GOOGLE_ID/GOOGLE_SECRET
+import { ensure } from '../../_lib/core.js';
+import { alertEvent } from '../../_lib/notify.js';
 const SITE = 'https://xn--oy2b21ac5u6lm.kr';
 const P = {
   kakao: { auth: 'https://kauth.kakao.com/oauth/authorize', token: 'https://kauth.kakao.com/oauth/token', me: 'https://kapi.kakao.com/v2/user/me', scope: '',
@@ -18,7 +20,8 @@ const ck = (n, v, age) => `${n}=${v}; Path=/; HttpOnly; Secure; SameSite=Lax; Ma
 const keys = (env, p) => [env[p.toUpperCase() + '_ID'], env[p.toUpperCase() + '_SECRET']];
 const ready = (env, p) => keys(env, p).every(Boolean); // ID와 시크릿이 둘 다 있어야 켜짐
 
-export async function onRequest({ request: req, env, params }) {
+export async function onRequest(ctx) {
+  const { request: req, env, params } = ctx;
   const [p, act] = params.a || [], url = new URL(req.url);
   if (p === 'providers') return Response.json(Object.fromEntries(Object.keys(P).map((k) => [k, ready(env, k)])), { headers: { 'cache-control': 'no-store' } });
   const cfg = P[p]; const [id, secret] = cfg ? keys(env, p) : [];
@@ -54,6 +57,8 @@ export async function onRequest({ request: req, env, params }) {
       if (!email || await db.prepare('SELECT 1 FROM users WHERE email=?').bind(email).first()) email = `${p}_${prof.pid}@social.invalid`; // 기존 계정과 자동 합치지 않음
       const r = await db.prepare('INSERT INTO users(email,nick,pw,role,created,provider,pid) VALUES(?,?,?,?,?,?,?)').bind(email, nick, 'AAAA:none', 'user', Date.now(), p, prof.pid).run();
       u = { id: r.meta.last_row_id };
+      const ev = (async () => { await ensure(db); await alertEvent(env, db, 'signup', 'u' + u.id, [`닉네임 ${nick}`, `가입 방식 ${{ kakao: '카카오', naver: '네이버', google: '구글' }[p]}`]); })().catch(() => {});
+      if (ctx.waitUntil) ctx.waitUntil(ev); else await ev;
     }
     const sid = rand();
     await db.prepare('INSERT INTO sessions(token,user_id,expires) VALUES(?,?,?)').bind(await sha(sid), u.id, Date.now() + 30 * 864e5).run();
