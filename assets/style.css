@@ -390,7 +390,6 @@ h1{font-size:clamp(30px,5vw,52px)}h2{font-size:clamp(24px,3.2vw,34px)}
 .pagehead.img .ph-bg::after{background:rgba(8,9,11,.66)}body:has(.pagehead.img) .crumb{color:#dcdcd8}
 .center .lead{margin-inline:auto}
 .band.img h2,.band.img .lead{color:#f3f3f1}
-.fab .f-ig,.fab .f-bl{display:none}@media(max-width:860px){.fab{display:none}}
 /* 폼 */
 .chk span{display:block}.chk small{display:block;color:var(--tx2);font-size:12.5px;line-height:1.55;margin-top:2px;font-weight:400}.chk small a{text-decoration:underline}
 .qf{margin-top:48px;max-width:640px}.qf .form{display:grid;gap:16px}.qf .btn{width:100%}
@@ -407,3 +406,17 @@ h1{font-size:clamp(30px,5vw,52px)}h2{font-size:clamp(24px,3.2vw,34px)}
 .dauth{display:flex;gap:10px;margin:0 0 20px}.dauth a{flex:1;text-align:center;padding:13px 8px;border:1px solid var(--bd);border-radius:8px;font-weight:700;font-size:16px;min-height:48px}.dauth a:last-child{background:var(--gold);color:var(--on-gold);border-color:var(--gold)}
 .dtool{display:grid;gap:10px;margin:0 0 24px}.dtool .btn{width:100%}
 @media(prefers-reduced-motion:reduce){.hero h1{opacity:1;transform:none;animation:none}.hero-bg img{animation:none}}
+/* 첫 화면 슬라이드: 사진 4장이 번갈아 부드럽게 바뀌고 천천히 확대된다 */
+.hero-bg .hs{position:absolute;inset:0;display:block;opacity:0;animation:hsf 24s linear infinite}
+.hero-bg .hs:nth-child(2){animation-delay:6s}.hero-bg .hs:nth-child(3){animation-delay:12s}.hero-bg .hs:nth-child(4){animation-delay:18s}
+.hero-bg .hs img{animation:hsz 24s linear infinite}
+.hero-bg .hs:nth-child(2) img{animation-delay:6s}.hero-bg .hs:nth-child(3) img{animation-delay:12s}.hero-bg .hs:nth-child(4) img{animation-delay:18s}
+@keyframes hsf{0%{opacity:0}4%{opacity:1}25%{opacity:1}30%,100%{opacity:0}}
+@keyframes hsz{0%{transform:scale(1.02)}30%{transform:scale(1.12)}100%{transform:scale(1.12)}}
+.hero-bg .hs:first-child{animation-name:hsf0}@keyframes hsf0{0%,25%{opacity:1}30%,96%{opacity:0}100%{opacity:1}}
+.hero-scroll{position:absolute;left:50%;bottom:18px;width:26px;height:42px;margin-left:-13px;border:2px solid rgba(255,255,255,.7);border-radius:14px;z-index:2}
+.hero-scroll span{position:absolute;left:50%;top:7px;width:4px;height:8px;margin-left:-2px;border-radius:2px;background:#fff;animation:hsd 1.8s ease-in-out infinite}
+@keyframes hsd{0%{opacity:0;transform:translateY(0)}30%{opacity:1}100%{opacity:0;transform:translateY(14px)}}
+@media(max-width:860px){.hero-scroll{display:none}}
+@media(prefers-reduced-motion:reduce){.hero-bg .hs,.hero-bg .hs img{animation:none}.hero-bg .hs:first-child{opacity:1}.hero-scroll span{animation:none}}
+.shot .hero-bg .hs:first-child{opacity:1}
