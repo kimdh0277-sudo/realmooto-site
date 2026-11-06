@@ -76,7 +76,7 @@
 (function(){fetch('/api/me',{credentials:'same-origin'}).then(function(r){return r.ok?r.json():null}).then(function(d){
   if(!d||!d.user)return;
   document.querySelectorAll('[data-auth=join]').forEach(function(a){a.textContent=d.user.nick+'님';a.href=d.user.role==='installer'?'/partner':a.href.replace('#/signup','#/')});
-  document.querySelectorAll('[data-auth=login]').forEach(function(a){a.textContent='로그아웃';a.href='#';a.addEventListener('click',function(e){e.preventDefault();fetch('/api/logout',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:'{}'}).then(function(){location.reload()})})});
+  document.querySelectorAll('[data-auth=login]').forEach(function(a){a.lastChild.nodeValue='로그아웃';a.href='#';a.addEventListener('click',function(e){e.preventDefault();fetch('/api/logout',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:'{}'}).then(function(){location.reload()})})});
 }).catch(function(){})})();
 
 /* 모션: 스크롤 등장(한 번만) + 읽기 진행 표시줄. 실패하면 내용은 그대로 보인다. */
@@ -199,4 +199,13 @@ function sendInq(body) {
   }) });
   ok.addEventListener('click', function () { if (!ev) return; ev.prompt(); ev.userChoice.then(function () { ev = null; dlg.close() }) });
   d.getElementById('instx').addEventListener('click', function () { dlg.close ? dlg.close() : dlg.removeAttribute('open') });
+})();
+
+/* 상단 안내 띠 닫기, 시공사례 가로 목록 진행 막대 */
+(function () {
+  var d = document, x = d.getElementById('bw-topx');
+  if (x) x.addEventListener('click', function () { d.documentElement.classList.add('notop'); try { localStorage.setItem('bwtop', '1') } catch (e) { } });
+  var r = d.getElementById('bw-rail'), b = d.getElementById('bw-bar');
+  if (r && b) { var u = function () { var m = r.scrollWidth - r.clientWidth; b.style.width = (m > 0 ? 18 + 82 * r.scrollLeft / m : 100) + '%' }; r.addEventListener('scroll', u, { passive: true }); addEventListener('resize', u); u() }
+  [].forEach.call(d.querySelectorAll('.nav-dd'), function (t) { t.addEventListener('click', function () { t.parentNode.classList.toggle('open') }) });
 })();
