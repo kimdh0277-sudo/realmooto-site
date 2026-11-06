@@ -148,9 +148,21 @@ function sendInq(body) {
     out.hidden = false;
   }
   function byProv(name) { var p = D.p.filter(function (x) { return x[0] === name })[0]; return p && p[1] }
-  sel.addEventListener('change', function () { q.value = ''; msg.textContent = ''; if (!sel.value) { out.hidden = true; return } show(byProv(sel.value), sel.value, sel.value) });
+  // 시·군·구 자동완성: 시·도를 고르면 그 시·도의 시·군·구만, 안 고르면 「시·도 이름」 전체
+  var dl = document.getElementById('loc-dl'), sp = function (s) { return s.replace(/\s+/g, '') };
+  function fill() {
+    dl.innerHTML = ''; var names = sel.value ? D.s[sel.value] : [].concat.apply([], D.p.map(function (p) { return D.s[p[0]].map(function (n) { return p[0] + ' ' + n }) }));
+    names.forEach(function (n) { var o = document.createElement('option'); o.value = n; dl.appendChild(o) });
+    q.placeholder = sel.value ? sel.value + ' 시·군·구 입력 (예: ' + D.s[sel.value][0] + ')' : '시·군·구 입력 (예: 강남구)';
+  }
+  fill();
+  sel.addEventListener('change', function () { q.value = ''; msg.textContent = ''; fill(); if (!sel.value) { out.hidden = true; return } show(byProv(sel.value), sel.value, sel.value) });
   function fromText() {
     var t = q.value.trim(); if (!t) return;
+    // 선택한 시·도 안에서 먼저 찾고, 없으면 전체 시·도에서 「시·도 + 시·군·구」 또는 시·군·구 이름으로 찾는다
+    var provs = sel.value ? [sel.value] : D.p.map(function (p) { return p[0] }), hit = null;
+    provs.some(function (pv) { return D.s[pv].some(function (n) { if (sp(n) === sp(t) || sp(pv + n) === sp(t) || n.split(' ').pop() === t) { hit = [pv, n]; return true } }) });
+    if (hit) { sel.value = hit[0]; fill(); msg.textContent = ''; return show(byProv(hit[0]), hit[0] + ' ' + hit[1], hit[0] + ' ' + hit[1]) }
     var n = t.replace(/\s+/g, ''), g = D.g.filter(function (x) { var k = x[0].replace(/\s+/g, ''); return k === n || x[0].split(' ').pop() === t })[0];
     if (g) { sel.value = ''; msg.textContent = ''; return show(g[1], g[0], g[0]) }
     var p = D.p.filter(function (x) { return t.indexOf(x[0]) === 0 || x[0] === t.slice(0, 2) })[0];
