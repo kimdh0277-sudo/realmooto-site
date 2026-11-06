@@ -502,3 +502,8 @@ h1,h2,h3{font-weight:800}
 @keyframes hsz{0%{transform:scale(1)}31%{transform:scale(1.03)}100%{transform:scale(1.03)}}
 .bw-hero .hero-bg::after{background:linear-gradient(90deg,rgba(8,9,11,.55),rgba(8,9,11,.1) 45%,rgba(8,9,11,0)),linear-gradient(0deg,var(--bg2) 0,transparent 14%)}
 @media(max-width:860px){.hero-bg .hs img.hs-im{object-position:50% 38%}.bw-hero .hero-bg::after{background:linear-gradient(0deg,var(--bg2) 0,rgba(8,9,11,.6) 32%,rgba(8,9,11,0) 55%)}}@media(min-width:861px){.hero-bg .hs img.hs-im{top:150px;height:calc(100% - 150px);object-position:72% 50%}.notop .hero-bg .hs img.hs-im{top:112px;height:calc(100% - 112px)}}
+/* 내 지역 확인 카드 안쪽 여백, 헤더 비침, 하단 메뉴 로그인 칸 */
+.loc-box{padding:40px 44px}.loc-t{text-align:center;margin-bottom:22px}.loc-t .bw-ey{color:var(--gold);font-size:12px;margin:0 0 12px}.loc-t h2{font-size:clamp(22px,2.6vw,30px)}
+:root{--hd:rgba(14,16,19,.97)}:root[data-theme=light]{--hd:rgba(238,240,243,.97)}
+.bw-bn .hd-auth{display:flex!important;border:0;background:none;border-radius:0}
+@media(max-width:860px){.loc-box{padding:30px 20px 26px}.loc-t p{font-size:14px;line-height:1.6}.loc-f{gap:10px}}
